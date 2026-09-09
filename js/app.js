@@ -1,58 +1,40 @@
-const rupiah = n => n == null ? '—' : new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n);
-const pct = n => n == null || Number.isNaN(n) ? '—' : `${n>=0?'+':''}${n.toFixed(2)}%`;
-const $ = s => document.querySelector(s);
-let db=null;
-
-function sma(arr,n){ if(arr.length<n) return null; return arr.slice(-n).reduce((a,b)=>a+b,0)/n; }
+const rupiah=n=>n==null?'—':new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(n);
+const pct=n=>n==null||Number.isNaN(n)?'—':`${n>=0?'+':''}${n.toFixed(2)}%`;
+const $=s=>document.querySelector(s); const $$=s=>[...document.querySelectorAll(s)]; let db=null, analysis=null, selectedPeriod=365;
+const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+function changeFrom(arr,n){ if(arr.length<=n) return null; return (arr.at(-1)/arr.at(-(n+1))-1)*100; }
+function sma(arr,n){return arr.length<n?null:arr.slice(-n).reduce((a,b)=>a+b,0)/n}
+function percentileRank(arr,v){let c=arr.filter(x=>x<=v).length; return c/arr.length*100}
 function calc(prices){
-  const sells=prices.map(x=>x.sell).filter(Boolean), last=sells.at(-1), prev7=sells[Math.max(0,sells.length-2)], prev30=sells[Math.max(0,sells.length-5)], first=sells[0], peak=Math.max(...sells), trough=Math.min(...sells);
-  const dd=(last/peak-1)*100, yoy=(last/first-1)*100, m7=(last/prev7-1)*100, m30=(last/prev30-1)*100;
-  const ma5=sma(sells,5), ma10=sma(sells,10), maTrend=ma5&&ma10 ? (ma5<ma10?-1:1):0;
-  let score=50;
-  score += dd<=-20?18:dd<=-15?12:dd<=-10?8:dd<=-5?4:0;
-  score += m30<0?8:m30>4?-8:0;
-  score += m7<0?6:m7>2?-4:0;
-  score += yoy>20?3:yoy<0?-3:0;
-  score += maTrend<0?4:-2;
-  score=Math.max(0,Math.min(100,Math.round(score)));
-  const label=score>=80?'STRONG BUY':score>=62?'BUY / ACCUMULATE':score>=45?'STAGGER / WATCH':'WAIT';
-  const confidence = prices.length>=20?'lebih kuat':'sementara — data masih jarang';
-  const zones={
-    starter:Math.round(peak*0.80),
-    aggressive:Math.round(peak*0.75),
-    extreme:Math.round(peak*0.68)
-  };
-  const buyback=prices.at(-1).buyback, spread=buyback?((last-buyback)/last)*100:null, beUp=buyback?((last/buyback)-1)*100:null;
-  return {last,peak,trough,dd,yoy,m7,m30,score,label,ma5,ma10,maTrend,confidence,zones,buyback,spread,beUp};
+ const sells=prices.map(x=>x.sell).filter(Boolean); const last=sells.at(-1); const first=sells[0]; const peak=Math.max(...sells), trough=Math.min(...sells);
+ const dd=(last/peak-1)*100, yoy=(last/first-1)*100; const m7=changeFrom(sells,1), m30=changeFrom(sells,4); const ma5=sma(sells,5), ma10=sma(sells,10); const maTrend=ma5&&ma10?(ma5>=ma10?1:-1):0;
+ let score=50; score += dd<=-25?20:dd<=-20?17:dd<=-15?12:dd<=-10?8:dd<=-5?4:0; score += m30!=null?(m30<0?8:m30>5?-8:0):0; score += m7!=null?(m7<0?6:m7>3?-4:0):0; score += yoy>20?3:yoy<0?-3:0; score += maTrend<0?4:-2; score=clamp(Math.round(score),0,100);
+ const label=score>=80?'STRONG BUY':score>=65?'BUY / ACCUMULATE':score>=50?'STAGGER / WATCH':'WAIT';
+ const alloc=score>=85?50:score>=75?40:score>=65?25:score>=55?15:0;
+ const zones={starter:Math.round(peak*.80), aggressive:Math.round(peak*.75), extreme:Math.round(peak*.68)};
+ const latest=prices.at(-1); const buyback=latest.buyback??null; const spread=buyback?((last-buyback)/last)*100:null; const be=buyback?((last/buyback)-1)*100:null;
+ const next= last<=zones.aggressive?zones.extreme:last<=zones.starter?zones.aggressive:zones.starter;
+ const signalText= score>=80?'Harga sudah menarik secara relatif; porsi pembelian bisa dinaikkan, tetapi tetap bertahap.':score>=65?'Kondisinya cukup menarik untuk mulai akumulasi. Jangan all-in karena koreksi masih bisa berlanjut.':score>=50?'Belum cukup kuat untuk agresif. Simpan sebagian dana untuk level yang lebih baik.':'Harga belum memberi margin of safety yang cukup.';
+ return {last,first,peak,trough,dd,yoy,m7,m30,ma5,ma10,maTrend,score,label,alloc,zones,buyback,spread,be,next,signalText,priceRank:percentileRank(sells,last)};
 }
-
-function sparkline(points,w,h,pad=10){
-  if(points.length<2) return '';
-  const min=Math.min(...points), max=Math.max(...points); const sx=(w-2*pad)/(points.length-1); const sy=(h-2*pad)/((max-min)||1);
-  return points.map((v,i)=>`${pad+i*sx},${h-pad-(v-min)*sy}`).join(' ');
-}
-function chart(){
-  const svg=$('#chart'); if(!db) return; const vals=db.prices.map(x=>x.sell); const w=900,h=330;
-  svg.setAttribute('viewBox',`0 0 ${w} ${h}`); svg.innerHTML=`<polyline fill="none" stroke="currentColor" stroke-width="5" points="${sparkline(vals,w,h,24)}"/>`;
-}
-function render(){
-  const d=calc(db.prices); window._analysis=d;
-  $('#price').textContent=rupiah(d.last);
-  $('#updated').textContent=`Update data: ${db.updated_at}`;
-  $('#score').textContent=d.score;
-  $('#label').textContent=d.label;
-  $('#scoreRing').style.setProperty('--score', `${d.score*3.6}deg`);
-  $('#m7').textContent=pct(d.m7); $('#m30').textContent=pct(d.m30); $('#yoy').textContent=pct(d.yoy); $('#dd').textContent=pct(d.dd);
-  $('#peak').textContent=rupiah(d.peak); $('#trough').textContent=rupiah(d.trough);
-  $('#zone1').textContent=rupiah(d.zones.starter); $('#zone2').textContent=rupiah(d.zones.aggressive); $('#zone3').textContent=rupiah(d.zones.extreme);
-  $('#buyback').textContent=rupiah(d.buyback); $('#buybackDecision').textContent=rupiah(d.buyback); $('#spread').textContent=d.spread==null?'—':`${d.spread.toFixed(2)}%`; $('#be').textContent=d.beUp==null?'—':`${d.beUp.toFixed(2)}%`;
-  $('#reason').textContent=`Harga sekitar ${Math.abs(d.dd).toFixed(1)}% di bawah peak dataset. Momentum 7/30 hari ${d.m7<0?'melemah':'menguat'}, sementara perubahan 1 tahun masih ${d.yoy>=0?'positif':'negatif'}. Ini mendukung akumulasi bertahap, bukan all-in.`;
-  $('#confidence').textContent=`Kualitas sinyal: ${d.confidence}.`;
-  $('#rows').innerHTML=db.prices.slice(-8).reverse().map(x=>`<tr><td>${x.date}</td><td>${rupiah(x.sell)}</td><td>${rupiah(x.buyback)}</td></tr>`).join('');
-  chart();
-}
-async function init(){ try{ db=await fetch('./data/prices.json',{cache:'no-store'}).then(r=>r.json()); render(); } catch(e){ $('#status').textContent='Data gagal dimuat. Cek data/prices.json'; } }
-
-function nav(){ document.querySelectorAll('[data-page]').forEach(a=>a.addEventListener('click',e=>{ e.preventDefault(); document.querySelectorAll('.page').forEach(p=>p.hidden=true); $(`#page-${a.dataset.page}`).hidden=false; document.querySelectorAll('.nav-link').forEach(n=>n.classList.remove('active')); a.classList.add('active'); history.replaceState(null,'',`#${a.dataset.page}`); })); const h=location.hash.replace('#','')||'dashboard'; const target=document.querySelector(`[data-page="${h}"]`)||document.querySelector('[data-page="dashboard"]'); target.click(); }
-function sim(){ $('#calcBtn').onclick=()=>{ const budget=+$('#budget').value||0; const alloc=(+$('#alloc').value||25)/100; const d=window._analysis; const now=budget*alloc; const grams=now/d.last; $('#simNow').textContent=rupiah(now); $('#simGram').textContent=grams.toFixed(4)+' g'; $('#simRemain').textContent=rupiah(budget-now); }; }
-init().then(()=>{nav();sim();});
+function fmtDate(s){return new Date(s+'T00:00:00').toLocaleDateString('id-ID',{day:'numeric',month:'short',year:'numeric'})}
+function drawLine(svg, vals, opts={}){const W=1000,H=410,p=46; const min=Math.min(...vals),max=Math.max(...vals); const sx=(W-2*p)/Math.max(vals.length-1,1); const sy=(H-2*p)/((max-min)||1); const pts=vals.map((v,i)=>`${p+i*sx},${H-p-(v-min)*sy}`).join(' '); const grid=[0,1,2,3,4].map(i=>{const y=p+i*(H-2*p)/4; return `<line x1="${p}" x2="${W-p}" y1="${y}" y2="${y}" stroke="#e9edf2"/><text x="6" y="${y+4}" fill="#8a96a3" font-size="11">${rupiah(Math.round(max-(max-min)*i/4)).replace('Rp ','Rp ')}</text>`}).join(''); const dates=opts.dates||[]; const xLabels=[0,Math.floor(vals.length/2),vals.length-1].filter((v,i,a)=>a.indexOf(v)===i).map(i=>`<text x="${p+i*sx}" y="${H-8}" text-anchor="${i===0?'start':i===vals.length-1?'end':'middle'}" fill="#8a96a3" font-size="11">${fmtDate(dates[i])}</text>`).join(''); const peakIndex=vals.indexOf(max); const currentX=p+(vals.length-1)*sx, currentY=H-p-(vals.at(-1)-min)*sy; const peakX=p+peakIndex*sx,peakY=H-p-(max-min)*sy; const area=`<polyline points="${p},${H-p} ${pts} ${currentX},${H-p}" fill="#eef2ff" stroke="none" opacity=".9"/>`; return {W,H,p,min,max,sx,sy,pts,grid,xLabels,peakX,peakY,currentX,currentY,area};}
+function renderChart(period){if(!db)return; selectedPeriod=period; const subset=db.prices.slice(-period); const vals=subset.map(x=>x.sell); const s=drawLine($('#mainChart'),vals,{dates:subset.map(x=>x.date)}); const last=vals.at(-1); const currentLabel=fmtDate(subset.at(-1).date); $('#mainChart').innerHTML=`${s.grid}${s.area}<polyline points="${s.pts}" fill="none" stroke="#3e68ff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><line x1="${s.currentX}" x2="${s.currentX}" y1="${s.currentY}" y2="${s.H-s.p}" stroke="#cad5ff" stroke-dasharray="5 6"/><circle cx="${s.peakX}" cy="${s.peakY}" r="6" fill="#f5a623"/><text x="${Math.min(s.peakX+10,s.W-130)}" y="${Math.max(22,s.peakY-10)}" fill="#c27b00" font-size="11" font-weight="800">Peak ${rupiah(s.max)}</text><circle cx="${s.currentX}" cy="${s.currentY}" r="8" fill="#fff" stroke="#3e68ff" stroke-width="4"/><rect x="${Math.max(10,s.currentX-65)}" y="${Math.max(10,s.currentY-42)}" width="130" height="26" rx="13" fill="#17202a"/><text x="${s.currentX}" y="${Math.max(27,s.currentY-24)}" text-anchor="middle" fill="#fff" font-size="11" font-weight="800">${rupiah(last)}</text>${s.xLabels}`;
+ const reading=analysis; const rel=analysis.dd<=-15?'cukup jauh di bawah peak':'masih dekat dengan peak'; const momentum=analysis.m30<0?'melemah dalam jangka pendek':'masih cenderung menguat'; $('#chartReading').innerHTML=`<b>${currentLabel}:</b> harga sekarang ${rupiah(last)} dan berada <b>${Math.abs(analysis.dd).toFixed(1)}%</b> di bawah peak dataset. Momentum 30 hari <b>${pct(analysis.m30)}</b> sehingga pasar sedang ${momentum}. Ini lebih cocok dibaca sebagai ${analysis.label.toLowerCase()} daripada sinyal untuk mengejar harga.`; $('#chartTitle').textContent=period>=365?'Pergerakan 1 tahun':`Pergerakan ${period} hari`; $('#chartSubtitle').textContent=`${subset.length} snapshot pada rentang ini · titik terakhir ${currentLabel}`; $$('[data-period]').forEach(b=>b.classList.toggle('active',+b.dataset.period===period));}
+function renderMini(){const vals=db.prices.map(x=>x.sell).slice(-12); const W=520,H=120,p=8; const min=Math.min(...vals),max=Math.max(...vals); const pts=vals.map((v,i)=>`${p+i*(W-2*p)/(vals.length-1)},${H-p-(v-min)*(H-2*p)/(max-min||1)}`).join(' '); $('#miniChart').innerHTML=`<polyline points="${pts}" fill="none" stroke="#3e68ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><line x1="0" x2="520" y1="108" y2="108" stroke="#eef1f4"/>`}
+function render(){analysis=calc(db.prices); const d=analysis; $('#price').textContent=rupiah(d.last); $('#updated').textContent=fmtDate(db.updated_at); $('#source').textContent='Sumber data: ' + (db.source||'historical snapshots'); const tmove=changeFrom(db.prices.map(x=>x.sell).filter(Boolean),1); const tcls=tmove>0?'green':tmove<0?'red':'neutral'; $('#todayMove').className='pill '+tcls; $('#todayMove').textContent=tmove==null?'—':`${pct(tmove)} vs snapshot sebelumnya`;
+ $('#score').textContent=d.score; $('#scoreRing').style.setProperty('--score-angle',`${d.score*3.6}deg`); $('#scoreLabel').textContent=d.label; $('#decisionHeadline').textContent=d.label; $('#decisionText').textContent=d.signalText; $('#confidence').textContent=db.prices.length<25?'Kualitas sinyal: indikatif — data masih jarang.':'Kualitas sinyal: lebih kuat — sampel cukup untuk membaca tren.';
+ const alloc=d.alloc; $('#allocationTitle').textContent=alloc?`Mulai ${alloc}% sekarang`:'Belum perlu masuk'; $('#allocationReason').textContent=alloc?`Dari budget investasi, engine menyarankan ${alloc}% di level saat ini. Sisakan dana untuk entry berikutnya agar kamu tidak kehabisan amunisi saat koreksi.`:'Tahan cash dan tunggu kondisi harga membaik.'; $('#allocPct').textContent=alloc+'%'; $('#allocAmount').textContent='Isi budget di Simulator'; $('#allocFill').style.width=alloc+'%';
+ $('#ladderRows').innerHTML=`<div class="ladder-row"><div><b>Cicil sekarang</b><span>Zona saat ini</span></div><strong>${rupiah(d.zones.starter)}</strong></div><div class="ladder-row"><div><b>Agresif</b><span>Tambahkan porsi</span></div><strong>${rupiah(d.zones.aggressive)}</strong></div><div class="ladder-row"><div><b>Ekstrem</b><span>Koreksi dalam</span></div><strong>${rupiah(d.zones.extreme)}</strong></div>`;
+ $('#quickDd').textContent=pct(d.dd); $('#quick7').textContent=pct(d.m7); $('#quick30').textContent=pct(d.m30); $('#quickYoy').textContent=pct(d.yoy);
+ $('#insight1').textContent=`Harga ${Math.abs(d.dd).toFixed(1)}% di bawah peak ${rupiah(d.peak)}. Ruang koreksi sudah ada, jadi entry kecil lebih masuk akal daripada all-in.`; $('#insight2').textContent=`Momentum 7 hari ${pct(d.m7)} dan 30 hari ${pct(d.m30)}. ${d.m30<0?'Tekanan masih terasa.':'Momentum mulai mendukung.'}`; $('#insight3').textContent=d.spread?`Spread beli–buyback sekitar ${d.spread.toFixed(2)}%. Harga perlu naik setidaknya sekitar ${d.be.toFixed(2)}% untuk menutup selisih tersebut.`:'Buyback terbaru belum tersedia di dataset.';
+ $('#peak').textContent=rupiah(d.peak); $('#trough').textContent=rupiah(d.trough); $('#marketDd').textContent=pct(d.dd); $('#buyback').textContent=rupiah(d.buyback); const pidx=db.prices.findIndex(x=>x.sell===d.peak); const tidx=db.prices.findIndex(x=>x.sell===d.trough); $('#peakDate').textContent=pidx>=0?fmtDate(db.prices[pidx].date):''; $('#troughDate').textContent=tidx>=0?fmtDate(db.prices[tidx].date):''; $('#historyCount').textContent=`${db.prices.length} snapshot tersimpan`;
+ $('#rows').innerHTML=db.prices.slice().reverse().map((x,i,a)=>{const next=i<a.length-1?a[i+1]:null;const ch=next&&next.sell?((x.sell/next.sell)-1)*100:null;return `<tr><td>${fmtDate(x.date)}</td><td><b>${rupiah(x.sell)}</b></td><td>${rupiah(x.buyback)}</td><td>${pct(ch)}</td></tr>`}).join('');
+ $('#decisionChip').textContent=d.label; $('#bigSignal').textContent=d.label; $('#bigSignalText').textContent=d.signalText; $('#dScore').textContent=d.score+'/100'; $('#dAlloc').textContent=d.alloc+'%'; $('#dNext').textContent=rupiah(d.next); $('#dBuy').textContent=rupiah(d.last); $('#dBb').textContent=rupiah(d.buyback); $('#dSpread').textContent=d.spread?d.spread.toFixed(2)+'%':'—'; $('#dBe').textContent=d.be?d.be.toFixed(2)+'%':'—'; $('#reasonList').innerHTML=[`Drawdown ${Math.abs(d.dd).toFixed(1)}% dari peak ${rupiah(d.peak)} memberi ruang untuk entry bertahap.`,`Momentum 30 hari ${pct(d.m30)} membuat engine belum menaikkan alokasi ke level agresif penuh.`,`Perubahan 1 tahun ${pct(d.yoy)} memberi konteks bahwa koreksi terjadi setelah kenaikan besar, bukan dalam tren turun panjang.`,`Spread buy–buyback ${d.spread?d.spread.toFixed(2)+'%':'belum tersedia'} membatasi alasan untuk trading jangka sangat pendek.`].map((t,i)=>`<div class="reason-item"><div class="reason-num">${i+1}</div><p>${t}</p></div>`).join('');
+ $('#scenarioBoxes').innerHTML=[{t:'Turun ke agresif',v:rupiah(d.zones.aggressive),p:'Jika harga menyentuh level ini, engine meningkatkan porsi pembelian.'},{t:'Turun ke ekstrem',v:rupiah(d.zones.extreme),p:'Koreksi dalam. Simpan amunisi khusus untuk skenario ini.'},{t:'Naik 5%',v:rupiah(d.last*1.05),p:'Gunakan sebagai cek, bukan target wajib. Spread masih perlu ditutup lebih dulu.'}].map(o=>`<div class="scenario-box"><div class="t">${o.t}</div><div class="v">${o.v}</div><p>${o.p}</p></div>`).join('');
+ $('#sampleCount').textContent=db.prices.length; $('#sampleSpan').textContent=`${fmtDate(db.prices[0].date)} – ${fmtDate(db.prices.at(-1).date)}`; const similar=db.prices.filter(x=>x.sell<=d.zones.starter).length; $('#similarCount').textContent=similar; $('#backtestNote').textContent=`Dataset saat ini berisi ${db.prices.length} snapshot, belum 365 titik harian. Jadi kita belum boleh menyebut engine ini “teruji statistik”. Yang bisa kita katakan: ${similar} snapshot historis berada di area harga yang sama atau lebih rendah dari zona cicil. Untuk validasi lebih kuat, riwayat harian penuh perlu dikumpulkan dan diuji forward 7/30/90 hari.`;
+ renderMini(); renderChart(selectedPeriod); calcSimulator(); }
+function calcSimulator(){ if(!analysis)return; const budget=Math.max(0,+$('#budget').value||0); const override=Math.max(0,Math.min(100,+$('#allocInput').value||0)); const suggested=analysis.alloc; const now=budget*(override/100); const grams=analysis.last?now/analysis.last:0; $('#allocValue').textContent=override+'%'; $('#engineAlloc').textContent=suggested+'%'; $('#simNow').textContent=rupiah(now); $('#simGram').textContent=grams.toFixed(4)+' g'; $('#simRemain').textContent=rupiah(budget-now); $('#simHeadline').textContent=override?`Beli ${rupiah(now)} hari ini`:'Tahan dana dulu'; $('#simText').textContent=override?`Pada harga ${rupiah(analysis.last)}, budget ini kira-kira mendapat ${grams.toFixed(4)} gram. Sisa dana dipertahankan untuk level berikutnya.`:'Masukkan alokasi di atas untuk menghitung pembelian.'; const plan=[{tag:'Sekarang',pct:override,desc:'Harga saat ini',amt:now},{tag:'Agresif',pct:30,desc:`Saat ≤ ${rupiah(analysis.zones.aggressive)}`,amt:budget*.30},{tag:'Ekstrem',pct:analysis.alloc>=40?20:30,desc:`Saat ≤ ${rupiah(analysis.zones.extreme)}`,amt:budget*(analysis.alloc>=40?.2:.3)}]; $('#planRows').innerHTML=plan.map(x=>`<div class="plan-row"><div class="plan-tag">${x.pct}%</div><div class="plan-desc"><b>${x.tag}</b><span>${x.desc}</span></div><div class="plan-amt">${rupiah(x.amt)}</div></div>`).join(''); }
+function nav(){const show=hash=>{const page=hash?.replace('#','')||'dashboard'; $$('.page').forEach(p=>p.hidden=true); const t=$(`#page-${page}`)||$('#page-dashboard'); t.hidden=false; $$('.nav-link').forEach(a=>a.classList.toggle('active',a.dataset.page===((t.id||'').replace('page-','')))); if(page==='market')renderChart(selectedPeriod);}; $$('.nav-link').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();location.hash=a.getAttribute('href').slice(1);show(location.hash)})); window.addEventListener('hashchange',()=>show(location.hash)); show(location.hash); }
+async function init(){try{const r=await fetch('./data/prices.json?cb='+Date.now(),{cache:'no-store'}); if(!r.ok)throw new Error('data'); db=await r.json(); nav(); render(); $('#periodSwitch').addEventListener('click',e=>{const b=e.target.closest('button[data-period]');if(b)renderChart(+b.dataset.period)}); $('#allocInput').addEventListener('input',calcSimulator); $('#budget').addEventListener('input',calcSimulator); $('#calcBtn').addEventListener('click',calcSimulator)}catch(e){document.body.innerHTML='<div style="padding:40px;font-family:system-ui">Data tidak dapat dimuat. Pastikan <b>data/prices.json</b> ada di root GitHub Pages.</div>'}}
+init();

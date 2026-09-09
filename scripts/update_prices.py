@@ -1,36 +1,39 @@
-import json, re, urllib.request
-from datetime import date
+#!/usr/bin/env python3
+"""Refresh price history. This updater is intentionally fail-closed."""
+import json,re,datetime,urllib.request
 from pathlib import Path
+URL='https://www.ecorp-images.galeri24.co.id/harga-emas'
+OUT=Path(__file__).resolve().parents[1]/'data'/'prices.json'
 
-ROOT=Path(__file__).resolve().parents[1]
-OUT=ROOT/'data'/'prices.json'
-URL='https://pegadaian.co.id/harga-emas'
+def fetch():
+    req=urllib.request.Request(URL,headers={'User-Agent':'Mozilla/5.0 GoldAdvisor/1.0'})
+    with urllib.request.urlopen(req,timeout=20) as r:return r.read().decode('utf-8','ignore')
 
-req=urllib.request.Request(URL,headers={'User-Agent':'Mozilla/5.0 GoldAdvisor/3.0'})
-html=urllib.request.urlopen(req,timeout=30).read().decode('utf-8','ignore')
-text=re.sub(r'\\s+',' ',html)
-# Do not guess. Search several explicit representations for Galeri24 1 gram.
-patterns=[
-    r'Galeri24.{0,700}?1\\s*gram.{0,700}?Rp\\s*([0-9][0-9\\.]*)',
-    r'1\\s*gram.{0,700}?Galeri24.{0,700}?Rp\\s*([0-9][0-9\\.]*)',
-    r'Galeri24.{0,700}?1\\s*gram.{0,700}?([0-9]{1,3}(?:\\.[0-9]{3}){2,})'
-]
-price=None
-for pat in patterns:
-    m=re.search(pat,text,re.I)
-    if m:
-        val=int(m.group(1).replace('.',''))
-        if 500_000 <= val <= 10_000_000:
-            price=val; break
-if price is None:
-    raise SystemExit('No confident Galeri24 1 gram price found; refusing to write unverified data.')
+def rupiah(s):
+    m=re.search(r'Rp\s*([0-9\.]+)',s or '')
+    return int(m.group(1).replace('.','')) if m else None
 
-data=json.loads(OUT.read_text())
-entry={'date':str(date.today()),'sell':price,'buyback':None}
-prices=[p for p in data.get('prices',[]) if p.get('date')!=entry['date']]
-prices.append(entry)
-data['prices']=sorted(prices,key=lambda x:x['date'])[-366:]
-data['updated_at']=entry['date']
-data['source']='Pegadaian price page (automation feed)'
-OUT.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
-print(f'Updated {entry["date"]}: Rp{price:,}')
+def main():
+    html=fetch()
+    # Look for common Galeri24 1 gram pricing rows around page text.
+    clean=re.sub(r'\s+',' ',html)
+    sell=None
+    patterns=[r'1 gram.{0,500}?Rp\s*([0-9\.]+)',r'1 Gram.{0,500}?Rp\s*([0-9\.]+)']
+    for p in patterns:
+        m=re.search(p,clean,re.I)
+        if m:
+            sell=int(m.group(1).replace('.',''));break
+    if not sell or sell<500000:return 2
+    data=json.loads(OUT.read_text())
+    today=datetime.date.today().isoformat()
+    rows=data['prices']
+    latest=rows[-1] if rows else None
+    if latest and latest.get('date')==today:
+        latest['sell']=sell
+    else:
+        rows.append({'date':today,'sell':sell,'buyback':None})
+    data['updated_at']=today
+    OUT.write_text(json.dumps(data,indent=2))
+    return 0
+
+if __name__=='__main__':raise SystemExit(main())
