@@ -1,26 +1,45 @@
-import os, re, json, datetime, requests
+import datetime as dt, json, os, re, sys
+from pathlib import Path
+import requests
 from bs4 import BeautifulSoup
-URL=os.environ.get('PRICE_SOURCE_URL','https://pegadaian.co.id/harga-emas')
-path='data/prices.json'
-r=requests.get(URL,timeout=30,headers={'User-Agent':'Mozilla/5.0'})
-r.raise_for_status()
-html=r.text
-text=BeautifulSoup(html,'html.parser').get_text(' ',strip=True)
-# Pegadaian page is dynamic; exact selectors may change. This script intentionally fails rather than writing guessed data.
-# Search common currency patterns around Galeri24; customize selectors here after inspecting the live DOM/JSON feed.
-patterns=[r'Galeri24.{0,250}?1\s*gram.{0,80}?Rp\s*([0-9.]+)',r'1\s*gram.{0,80}?Rp\s*([0-9.]+).{0,200}?Galeri24']
-price=None
-for p in patterns:
-    m=re.search(p,text,re.I|re.S)
-    if m:
-        price=int(m.group(1).replace('.',''));break
-if price is None:
-    raise SystemExit('Could not safely extract a Galeri24 1g price from the current Pegadaian page. Inspect the live page/API and update this parser; no data was written.')
-with open(path) as f: data=json.load(f)
-date=datetime.date.today().isoformat()
-if data and data[-1]['date']==date:
-    data[-1]['price']=price
-else:
-    data.append({'date':date,'price':price,'buyback':None,'note':'Automatic daily fetch; verify buyback feed if available.'})
-with open(path,'w') as f: json.dump(data,f,ensure_ascii=False,indent=2)
-print('updated',date,price)
+
+OUT=Path('data/prices.json')
+HEADERS={'User-Agent':'Mozilla/5.0 (GoldAdvisor daily updater; GitHub Actions)'}
+SOURCES=[
+ ('Galeri24 official', 'https://galeri24.co.id/harga-emas'),
+ ('Galeri24 official static', 'https://www.ecorp-images.galeri24.co.id/harga-emas'),
+]
+
+def money(s):
+    return int(re.sub(r'[^0-9]','',s))
+
+def parse(text):
+    soup=BeautifulSoup(text,'html.parser')
+    flat=' '.join(soup.stripped_strings)
+    # First match for the Galeri24 1 gram row. We intentionally require both a 1g marker and a rupiah value.
+    patterns=[
+      r'GALERI 24\s+Berat\s+Harga Jual\s+Harga Buyback\s+0\.5\s+Rp[0-9.]+\s+Rp[0-9.]+\s+1\s+Rp([0-9.]+)\s+Rp([0-9.]+)',
+      r'Harga GALERI 24.*?0\.5\s+Rp[0-9.]+\s+Rp[0-9.]+.*?1\s+Rp([0-9.]+)\s+Rp([0-9.]+)'
+    ]
+    for p in patterns:
+        m=re.search(p,flat,re.I|re.S)
+        if m:return money(m.group(1)),money(m.group(2))
+    raise ValueError('Galeri24 1g row not found')
+
+def main():
+    today=dt.date.today().isoformat(); errors=[]; result=None; source_used=None
+    for name,url in SOURCES:
+        try:
+            r=requests.get(url,headers=HEADERS,timeout=30); r.raise_for_status(); result=parse(r.text); source_used=name; break
+        except Exception as e: errors.append(f'{name}: {e}')
+    if result is None:
+        print('\n'.join(errors), file=sys.stderr); raise SystemExit(1)
+    price,buyback=result
+    data=json.loads(OUT.read_text()) if OUT.exists() else []
+    row={'date':today,'price':price,'buyback':buyback,'note':f'Automatic daily fetch • {source_used}'}
+    if data and data[-1].get('date')==today:data[-1]=row
+    else:data.append(row)
+    data.sort(key=lambda x:x.get('date',''))
+    OUT.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
+    print(f'updated {today}: {price=} {buyback=} source={source_used}')
+if __name__=='__main__':main()

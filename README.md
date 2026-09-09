@@ -1,24 +1,27 @@
-# Gold Advisor — Pegadaian / Tring
+# Gold Advisor — Pegadaian / Tring v2
 
-Dashboard web statis untuk membantu menentukan timing akumulasi emas. Fitur:
-- harga terakhir Galeri24 1 gram
-- spread beli vs buyback
-- perubahan 7/30/90/365 hari
-- drawdown dari peak
-- BUY SCORE 0–100
-- zona cicil / agresif / ekstrem
-- simulasi alokasi modal
+Dashboard statis untuk membantu timing akumulasi emas. Engine menggunakan drawdown dari peak, momentum 7/30/90 hari, slope jangka pendek, dan spread beli-vs-buyback.
 
-## Menjalankan di komputer
-Gunakan web server sederhana, karena browser biasanya memblokir fetch JSON dari `file://`.
+## GitHub Pages
 
-```bash
-python -m http.server 8080
+Pastikan struktur repository seperti ini, dengan `index.html` di root:
+
+```text
+gold-advisor/
+├── index.html
+├── data/
+│   └── prices.json
+├── scripts/
+│   └── update_prices.py
+└── .github/
+    └── workflows/
+        └── update.yml
 ```
-Lalu buka `http://localhost:8080`.
 
-## Update otomatis harian
-Untuk benar-benar otomatis, deploy folder ini ke GitHub Pages dan aktifkan workflow `.github/workflows/update.yml`. Workflow dipasang sebagai kerangka: sumber data harus disesuaikan dengan endpoint/feed Pegadaian yang dapat diakses tanpa login. Dashboard sengaja memisahkan `data/prices.json` dari UI agar sumber data dapat diganti tanpa mengubah mesin analisis.
+Pages: **Deploy from a branch → main → / (root)**.
 
-## Catatan
-Dataset awal berisi snapshot historis yang dapat diverifikasi. Ini bukan feed harian penuh 365 hari. Engine tidak menjanjikan prediksi; ia memberi rule-based timing signal berdasarkan data yang tersedia.
+## Update otomatis
+
+Workflow berjalan setiap hari sekitar **08:10 WIB**. Ia mengambil baris Galeri24 1 gram dari halaman Galeri24 resmi, menyimpan harga jual + buyback ke `data/prices.json`, lalu commit perubahan. Jika parser tidak yakin, workflow gagal dan **tidak menulis data tebakan**.
+
+Catatan: halaman harga Pegadaian/Tring dirender dinamis, sehingga updater v2 memakai halaman harga resmi Galeri24 (anak perusahaan Pegadaian) sebagai feed yang lebih mudah dibaca oleh GitHub Actions. Harga final yang berlaku tetap harus dicek di Tring sebelum transaksi.
