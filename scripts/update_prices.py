@@ -1,45 +1,36 @@
-import datetime as dt, json, os, re, sys
+import json, re, urllib.request
+from datetime import date
 from pathlib import Path
-import requests
-from bs4 import BeautifulSoup
 
-OUT=Path('data/prices.json')
-HEADERS={'User-Agent':'Mozilla/5.0 (GoldAdvisor daily updater; GitHub Actions)'}
-SOURCES=[
- ('Galeri24 official', 'https://galeri24.co.id/harga-emas'),
- ('Galeri24 official static', 'https://www.ecorp-images.galeri24.co.id/harga-emas'),
+ROOT=Path(__file__).resolve().parents[1]
+OUT=ROOT/'data'/'prices.json'
+URL='https://pegadaian.co.id/harga-emas'
+
+req=urllib.request.Request(URL,headers={'User-Agent':'Mozilla/5.0 GoldAdvisor/3.0'})
+html=urllib.request.urlopen(req,timeout=30).read().decode('utf-8','ignore')
+text=re.sub(r'\\s+',' ',html)
+# Do not guess. Search several explicit representations for Galeri24 1 gram.
+patterns=[
+    r'Galeri24.{0,700}?1\\s*gram.{0,700}?Rp\\s*([0-9][0-9\\.]*)',
+    r'1\\s*gram.{0,700}?Galeri24.{0,700}?Rp\\s*([0-9][0-9\\.]*)',
+    r'Galeri24.{0,700}?1\\s*gram.{0,700}?([0-9]{1,3}(?:\\.[0-9]{3}){2,})'
 ]
+price=None
+for pat in patterns:
+    m=re.search(pat,text,re.I)
+    if m:
+        val=int(m.group(1).replace('.',''))
+        if 500_000 <= val <= 10_000_000:
+            price=val; break
+if price is None:
+    raise SystemExit('No confident Galeri24 1 gram price found; refusing to write unverified data.')
 
-def money(s):
-    return int(re.sub(r'[^0-9]','',s))
-
-def parse(text):
-    soup=BeautifulSoup(text,'html.parser')
-    flat=' '.join(soup.stripped_strings)
-    # First match for the Galeri24 1 gram row. We intentionally require both a 1g marker and a rupiah value.
-    patterns=[
-      r'GALERI 24\s+Berat\s+Harga Jual\s+Harga Buyback\s+0\.5\s+Rp[0-9.]+\s+Rp[0-9.]+\s+1\s+Rp([0-9.]+)\s+Rp([0-9.]+)',
-      r'Harga GALERI 24.*?0\.5\s+Rp[0-9.]+\s+Rp[0-9.]+.*?1\s+Rp([0-9.]+)\s+Rp([0-9.]+)'
-    ]
-    for p in patterns:
-        m=re.search(p,flat,re.I|re.S)
-        if m:return money(m.group(1)),money(m.group(2))
-    raise ValueError('Galeri24 1g row not found')
-
-def main():
-    today=dt.date.today().isoformat(); errors=[]; result=None; source_used=None
-    for name,url in SOURCES:
-        try:
-            r=requests.get(url,headers=HEADERS,timeout=30); r.raise_for_status(); result=parse(r.text); source_used=name; break
-        except Exception as e: errors.append(f'{name}: {e}')
-    if result is None:
-        print('\n'.join(errors), file=sys.stderr); raise SystemExit(1)
-    price,buyback=result
-    data=json.loads(OUT.read_text()) if OUT.exists() else []
-    row={'date':today,'price':price,'buyback':buyback,'note':f'Automatic daily fetch • {source_used}'}
-    if data and data[-1].get('date')==today:data[-1]=row
-    else:data.append(row)
-    data.sort(key=lambda x:x.get('date',''))
-    OUT.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
-    print(f'updated {today}: {price=} {buyback=} source={source_used}')
-if __name__=='__main__':main()
+data=json.loads(OUT.read_text())
+entry={'date':str(date.today()),'sell':price,'buyback':None}
+prices=[p for p in data.get('prices',[]) if p.get('date')!=entry['date']]
+prices.append(entry)
+data['prices']=sorted(prices,key=lambda x:x['date'])[-366:]
+data['updated_at']=entry['date']
+data['source']='Pegadaian price page (automation feed)'
+OUT.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
+print(f'Updated {entry["date"]}: Rp{price:,}')
