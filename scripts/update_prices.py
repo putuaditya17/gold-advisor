@@ -1,39 +1,41 @@
-#!/usr/bin/env python3
-"""Refresh price history. This updater is intentionally fail-closed."""
-import json,re,datetime,urllib.request
+import json, re
+from datetime import datetime, timezone
+from urllib.request import Request, urlopen
 from pathlib import Path
-URL='https://www.ecorp-images.galeri24.co.id/harga-emas'
-OUT=Path(__file__).resolve().parents[1]/'data'/'prices.json'
+
+URL='https://galeri24.co.id/harga-emas'
+OUT=Path(__file__).resolve().parents[1]/'data/prices.json'
 
 def fetch():
-    req=urllib.request.Request(URL,headers={'User-Agent':'Mozilla/5.0 GoldAdvisor/1.0'})
-    with urllib.request.urlopen(req,timeout=20) as r:return r.read().decode('utf-8','ignore')
+    req=Request(URL,headers={'User-Agent':'Mozilla/5.0 (GoldAdvisor bot)'})
+    with urlopen(req,timeout=30) as r:
+        return r.read().decode('utf-8','ignore')
 
-def rupiah(s):
-    m=re.search(r'Rp\s*([0-9\.]+)',s or '')
-    return int(m.group(1).replace('.','')) if m else None
+def parse(html):
+    text=re.sub(r'<[^>]+>',' ',html)
+    text=re.sub(r'\s+',' ',text)
+    # Target the first Galeri 24 1 gram row. Currency separators are stripped.
+    patterns=[
+        r'GALERI 24.*?Berat.*?Harga Jual.*?Harga Buyback.*?0\.5.*?Rp\s*([\d\.]+).*?Rp\s*([\d\.]+).*?1\s*Rp\s*([\d\.]+).*?Rp\s*([\d\.]+)',
+        r'GALERI 24.*?1\s*Rp\s*([\d\.]+).*?Rp\s*([\d\.]+)'
+    ]
+    for p in patterns:
+        m=re.search(p,text,re.I)
+        if m:
+            if len(m.groups())==4:
+                return int(m.group(3).replace('.','')),int(m.group(4).replace('.',''))
+            return int(m.group(1).replace('.','')),int(m.group(2).replace('.',''))
+    raise RuntimeError('Could not confidently parse Galeri24 1g sell/buyback price')
 
 def main():
-    html=fetch()
-    # Look for common Galeri24 1 gram pricing rows around page text.
-    clean=re.sub(r'\s+',' ',html)
-    sell=None
-    patterns=[r'1 gram.{0,500}?Rp\s*([0-9\.]+)',r'1 Gram.{0,500}?Rp\s*([0-9\.]+)']
-    for p in patterns:
-        m=re.search(p,clean,re.I)
-        if m:
-            sell=int(m.group(1).replace('.',''));break
-    if not sell or sell<500000:return 2
+    sell,buyback=parse(fetch())
     data=json.loads(OUT.read_text())
-    today=datetime.date.today().isoformat()
-    rows=data['prices']
-    latest=rows[-1] if rows else None
-    if latest and latest.get('date')==today:
-        latest['sell']=sell
-    else:
-        rows.append({'date':today,'sell':sell,'buyback':None})
-    data['updated_at']=today
-    OUT.write_text(json.dumps(data,indent=2))
-    return 0
+    today=datetime.now(timezone.utc).astimezone().strftime('%Y-%m-%d')
+    data=[x for x in data if x.get('date')!=today]
+    data.append({'date':today,'sell':sell,'buyback':buyback,'source':'Galeri24 official automated update'})
+    data=sorted(data,key=lambda x:x['date'])
+    OUT.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
+    print(f'{today}: sell={sell}, buyback={buyback}')
 
-if __name__=='__main__':raise SystemExit(main())
+if __name__=='__main__':
+    main()

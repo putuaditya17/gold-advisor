@@ -1,17 +1,23 @@
-# Gold Advisor v4
+# Gold Advisor v5
 
-Dashboard web untuk membantu membaca kondisi harga emas dan menentukan pembelian bertahap.
+Dashboard statis untuk membantu menentukan **kapan** dan **berapa banyak** membeli emas Galeri24 1 gram.
 
 ## Struktur
-- `index.html` UI utama
-- `css/styles.css` styling
-- `js/app.js` decision engine + interactive chart + simulator
-- `data/prices.json` histori
-- `scripts/update_prices.py` updater fail-closed
-- `.github/workflows/update.yml` update harian
+- `index.html` — single-page dashboard dengan halaman Ringkasan, Market, Keputusan, Simulator, Cara kerja.
+- `css/styles.css` — UI responsive bergaya financial app modern.
+- `js/app.js` — analytics engine, grafik, simulator, dan navigasi.
+- `data/prices.json` — histori harga.
+- `scripts/update_prices.py` — pengambil harga harian dari halaman resmi Galeri24.
+- `.github/workflows/update.yml` — update otomatis harian via GitHub Actions.
 
 ## GitHub Pages
-Upload seluruh isi folder ini ke root branch `main`, lalu aktifkan Pages dari `main` + `/(root)`.
+1. Upload **isi ZIP** ke root branch `main`.
+2. Settings → Pages → Deploy from a branch → `main` → `/ (root)`.
+3. Buka `https://USERNAME.github.io/gold-advisor/`.
+4. Jalankan Actions → **Daily gold price refresh** sekali secara manual untuk tes.
 
 ## Catatan data
-Dataset awal merupakan snapshot historis, bukan satu tahun penuh harian. Karena itu skor adalah decision aid, bukan prediksi dan belum merupakan backtest statistik final. Selalu cek harga final di Tring/Pegadaian sebelum transaksi.
+Dataset awal berisi snapshot historis yang tersedia. Engine v5 menggunakan tanggal kalender untuk menghitung perubahan 7/30/90/365 hari dan tidak menganggap setiap snapshot sebagai satu hari. Histori harian akan bertambah dari update otomatis setelah workflow aktif.
+
+## Catatan metodologi
+BUY SCORE adalah rule-based decision aid, bukan prediksi harga dan belum merupakan backtest statistik penuh. Backtest 7/30/90 hari sebaiknya diaktifkan setelah histori harian cukup panjang.
