@@ -1,132 +1,18 @@
-<!doctype html>
-<html lang="id">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Gold Advisor — Keputusan Emas Lebih Mudah</title>
-  <meta name="description" content="Dashboard analisis harga emas Galeri24 untuk membantu menentukan kapan dan berapa banyak membeli.">
-  <link rel="stylesheet" href="./css/styles.css">
-</head>
-<body>
-  <header class="topbar">
-    <div class="topbar-inner">
-      <a class="brand" href="#dashboard"><span class="brand-mark">G</span><span>Gold Advisor</span></a>
-      <nav class="nav" aria-label="Navigasi utama">
-        <a data-page="dashboard" class="nav-link active" href="#dashboard">Ringkasan</a>
-        <a data-page="market" class="nav-link" href="#market">Market</a>
-        <a data-page="decision" class="nav-link" href="#decision">Keputusan</a>
-        <a data-page="simulator" class="nav-link" href="#simulator">Simulator</a>
-        <a data-page="method" class="nav-link" href="#method">Cara kerja</a>
-      </nav>
-      <div class="updated-chip"><span class="live-dot"></span><span id="topUpdated">Memuat</span></div>
-    </div>
-  </header>
-
-  <main class="site">
-    <section class="page" id="page-dashboard">
-      <div class="hero-intro">
-        <div>
-          <div class="eyebrow">GALERI24 · 1 GRAM</div>
-          <h1>Jadi, hari ini <span>beli atau tunggu?</span></h1>
-          <p class="lead">Bukan cuma melihat grafik. Gold Advisor menerjemahkan harga, koreksi, spread, dan momentum menjadi rencana pembelian yang mudah dijalankan.</p>
-        </div>
-        <div class="hero-date card-soft">
-          <div class="mini-label">HARGA TERBARU</div>
-          <b id="heroDate">—</b>
-          <span id="sourceLabel">Sumber: —</span>
-        </div>
-      </div>
-
-      <div class="dashboard-grid">
-        <article class="price-card card">
-          <div class="card-head"><div><div class="mini-label">HARGA JUAL</div><h2 id="price">—</h2></div><span id="todayMove" class="trend-pill">—</span></div>
-          <div class="price-meta"><span>Buyback</span><b id="buybackDash">—</b></div>
-          <div class="mini-chart-wrap"><svg id="miniChart" viewBox="0 0 700 180" aria-label="Grafik mini harga emas"></svg><div id="miniTip" class="chart-tooltip" hidden></div></div>
-          <div class="mini-note" id="miniNote">—</div>
-        </article>
-
-        <article class="score-card card">
-          <div class="score-header"><div><div class="mini-label">BUY SCORE</div><div class="muted">Seberapa menarik entry saat ini?</div></div><span id="scoreBadge" class="score-badge">—</span></div>
-          <div class="score-main">
-            <div class="score-number"><b id="score">—</b><span>/100</span></div>
-            <div class="score-message"><h3 id="decisionHeadline">—</h3><p id="decisionText">—</p></div>
-          </div>
-          <div class="score-meter"><span id="scoreMeterFill"></span></div>
-          <div class="score-scale"><span>WAIT</span><span>WATCH</span><span>ACCUMULATE</span><span>STRONG BUY</span></div>
-        </article>
-      </div>
-
-      <div class="section-row"><div><div class="eyebrow">RAPATKAN KE KEPUTUSAN</div><h2>Kalau saya punya Rp5 juta, beli berapa?</h2><p>Mesin keputusan menerjemahkan kondisi pasar menjadi porsi awal dan level tambah berikutnya.</p></div><a class="text-button" href="#simulator">Coba dengan budget saya →</a></div>
-
-      <div class="action-grid">
-        <article class="action-card primary card">
-          <div class="action-top"><span class="action-tag">SARAN HARI INI</span><span id="actionLabel" class="action-state">—</span></div>
-          <div class="action-amount"><b id="allocPct">—</b><span>alokasi awal</span></div>
-          <p id="allocationReason">—</p>
-          <div class="amount-row"><div><span>Dari budget contoh Rp5 jt</span><b id="allocExample">—</b></div><div><span>Perkiraan emas</span><b id="allocGram">—</b></div></div>
-        </article>
-        <article class="ladder-card card"><div class="card-title-row"><div><div class="mini-label">ENTRY LADDER</div><h3>Tambah kalau lebih murah</h3></div><span class="help-dot" title="Beli bertahap untuk mengurangi risiko salah timing.">?</span></div><div id="ladderRows"></div></article>
-        <article class="quick-card card"><div class="mini-label">SEKILAS</div><div class="quick-item"><span>Turun dari peak</span><b id="quickDd">—</b></div><div class="quick-item"><span>Perubahan 30 hari</span><b id="quick30">—</b></div><div class="quick-item"><span>Perubahan 1 tahun</span><b id="quickYoy">—</b></div><div class="quick-item"><span>Spread buyback</span><b id="quickSpread">—</b></div></article>
-      </div>
-
-      <div class="insight-strip">
-        <div class="insight"><span class="insight-icon blue">↘</span><div><b>Koreksi</b><p id="insightCorrection">—</p></div></div>
-        <div class="insight"><span class="insight-icon mint">↗</span><div><b>Momentum</b><p id="insightMomentum">—</p></div></div>
-        <div class="insight"><span class="insight-icon yellow">%</span><div><b>Spread</b><p id="insightSpread">—</p></div></div>
-      </div>
-    </section>
-
-    <section class="page" id="page-market" hidden>
-      <div class="page-header-row"><div><div class="eyebrow">MARKET</div><h1>Harga emas, dibaca titik demi titik.</h1><p class="lead">Arah harga terlihat dari posisi terhadap peak, perubahan antar titik, dan konteks waktu. <b>Arahkan kursor atau tap titik grafik</b> untuk melihat harga jual, buyback, dan perubahan.</p></div><div class="period-tabs" id="periodTabs"><button data-period="30">30H</button><button data-period="90">90H</button><button class="active" data-period="365">1 TAHUN</button></div></div>
-
-      <div class="market-top-grid">
-        <article class="chart-card card">
-          <div class="chart-card-head"><div><span class="mini-label">PRICE TREND</span><h2 id="chartTitle">Pergerakan 1 tahun</h2></div><div class="chart-legend"><span><i class="legend-line"></i>Harga jual</span><span><i class="legend-dot"></i>Peak</span></div></div>
-          <div class="chart-shell"><svg id="mainChart" viewBox="0 0 1200 520" role="img" aria-label="Grafik harga emas interaktif"></svg><div id="mainTooltip" class="chart-tooltip big" hidden></div></div>
-          <div class="chart-reading" id="chartReading">—</div>
-        </article>
-        <aside class="market-context">
-          <div class="stat-card blue-bg"><span>Harga saat ini</span><b id="marketCurrent">—</b><small id="marketDate">—</small></div>
-          <div class="stat-card"><span>Peak</span><b id="peak">—</b><small id="peakDate">—</small></div>
-          <div class="stat-card"><span>Low</span><b id="trough">—</b><small id="troughDate">—</small></div>
-          <div class="stat-card warm-bg"><span>Drawdown</span><b id="marketDd">—</b><small>dari peak</small></div>
-        </aside>
-      </div>
-
-      <div class="section-row compact"><div><div class="eyebrow">HISTORY</div><h2>Riwayat harga</h2><p>Setiap baris menjawab: berapa harganya pada tanggal itu?</p></div><span class="count-chip" id="historyCount">—</span></div>
-      <div class="table-card card"><div class="table-scroll"><table><thead><tr><th>Tanggal</th><th>Harga jual</th><th>Buyback</th><th>Perubahan</th><th>Status</th></tr></thead><tbody id="historyRows"></tbody></table></div></div>
-    </section>
-
-    <section class="page" id="page-decision" hidden>
-      <div class="page-header-row"><div><div class="eyebrow">KEPUTUSAN</div><h1>Jelas: beli berapa, lalu kapan tambah?</h1><p class="lead">Satu keputusan utama, satu rencana cadangan. Tidak perlu menebak titik terendah.</p></div><div id="decisionChip" class="decision-chip">—</div></div>
-      <div class="decision-hero card"><div class="decision-copy"><div class="mini-label">SINyal HARI INI</div><h2 id="bigSignal">—</h2><p id="bigSignalText">—</p></div><div class="decision-metric"><span>BUY SCORE</span><b id="dScore">—</b><small>Confidence <strong id="dConfidence">—</strong></small></div></div>
-      <div class="factor-grid" id="factorGrid"></div>
-      <div class="decision-two-col"><article class="card break-card"><div class="mini-label">BREAK-EVEN</div><h2>Berapa kenaikan agar impas?</h2><div class="be-grid"><div><span>Harga beli</span><b id="dBuy">—</b></div><div><span>Buyback</span><b id="dBb">—</b></div><div><span>Spread</span><b id="dSpread">—</b></div><div><span>Harga impas</span><b id="dBe">—</b></div></div><p id="beText">—</p></article><article class="card scenario-card"><div class="mini-label">SKENARIO</div><h2>Kalau harga turun setelah beli</h2><div id="scenarioBoxes"></div></article></div>
-    </section>
-
-    <section class="page" id="page-simulator" hidden>
-      <div class="page-header-row"><div><div class="eyebrow">SIMULATOR</div><h1>Masukkan budget, langsung terlihat rencananya.</h1><p class="lead">Geser alokasi sekarang. Sisanya otomatis dibagi ke level harga berikutnya.</p></div></div>
-      <div class="sim-grid"><article class="card sim-control"><div class="input-label">Budget investasi</div><div class="currency-input"><span>Rp</span><input id="budget" type="number" value="5000000" min="0" step="100000"></div><div class="input-label slider-label"><span>Alokasi sekarang</span><b id="allocValue">25%</b></div><input id="allocInput" type="range" min="0" max="70" step="5" value="25"><div class="slider-scale"><span>0%</span><span>25%</span><span>50%</span><span>70%</span></div><button id="calcBtn" class="primary-button">Hitung rencana</button><p class="microcopy">Engine menyarankan <b id="engineAlloc">—</b> berdasarkan kondisi harga saat ini.</p></article>
-        <article class="card sim-output"><div class="mini-label">HASIL</div><h2 id="simHeadline">—</h2><p id="simText">—</p><div class="sim-stat-grid"><div><span>Beli sekarang</span><b id="simNow">—</b></div><div><span>Perkiraan gram</span><b id="simGram">—</b></div><div><span>Dana ditahan</span><b id="simRemain">—</b></div></div></article></div>
-      <article class="card plan-card"><div class="section-row compact"><div><div class="eyebrow">Rencana bertahap</div><h2>Contoh pembagian dana</h2></div></div><div id="planRows"></div></article>
-    </section>
-
-    <section class="page" id="page-method" hidden>
-      <div class="page-header-row"><div><div class="eyebrow">CARA KERJA</div><h1>Kenapa Gold Advisor menyarankan begitu?</h1><p class="lead">Buka logika di balik score. Tidak ada angka ajaib yang disembunyikan.</p></div></div>
-      <div class="method-grid">
-        <article class="method-card"><span>01</span><h2>Koreksi dari peak</h2><p>Semakin jauh harga saat ini dari puncak dataset, semakin besar ruang untuk akumulasi. Ini bukan jaminan sudah bottom.</p></article>
-        <article class="method-card"><span>02</span><h2>Momentum</h2><p>Perubahan antar tanggal yang tersedia dipakai untuk melihat apakah koreksi masih berjalan atau harga mulai pulih.</p></article>
-        <article class="method-card"><span>03</span><h2>Tren 1 tahun</h2><p>Perubahan dari awal periode memberi konteks: koreksi di tengah tren naik berbeda dari pelemahan panjang.</p></article>
-        <article class="method-card"><span>04</span><h2>Spread buyback</h2><p>Harga jual dan buyback dibandingkan agar keputusan tidak lupa bahwa posisi harus melewati selisih tersebut untuk impas.</p></article>
-        <article class="method-card"><span>05</span><h2>Alokasi</h2><p>Score diterjemahkan menjadi porsi awal. Sistem membatasi pembelian sekaligus agar tidak all-in.</p></article>
-        <article class="method-card"><span>06</span><h2>Confidence</h2><p>Semakin sedikit data historis yang tersedia, semakin rendah tingkat keyakinan. Engine tidak pura-pura punya data yang tidak ada.</p></article>
-      </div>
-      <div class="card method-note"><b>Catatan metodologi</b><p id="methodDataNote">—</p></div>
-    </section>
-  </main>
-
-  <footer class="footer"><div>Gold Advisor · Alat bantu informasi, bukan jaminan hasil investasi.</div><div>Selalu cek harga final dan ketentuan transaksi di Tring/Pegadaian.</div></footer>
-  <script>window.GOLD_ADVISOR_DATA={"asset":"Galeri24 1 gram","source":"Gold Advisor historical snapshots","updated_at":"2026-09-09","prices":[{"date":"2025-09-08","sell":2050000,"buyback":null},{"date":"2025-09-30","sell":2209000,"buyback":null},{"date":"2025-10-31","sell":2391000,"buyback":null},{"date":"2025-11-28","sell":2426000,"buyback":null},{"date":"2026-01-30","sell":3260000,"buyback":null},{"date":"2026-02-27","sell":3065000,"buyback":null},{"date":"2026-03-25","sell":2849000,"buyback":null},{"date":"2026-04-20","sell":2886000,"buyback":null},{"date":"2026-04-30","sell":2775000,"buyback":null},{"date":"2026-05-30","sell":2772000,"buyback":null},{"date":"2026-06-22","sell":2649000,"buyback":null},{"date":"2026-07-09","sell":2610000,"buyback":null},{"date":"2026-07-31","sell":2601000,"buyback":null},{"date":"2026-08-01","sell":2573000,"buyback":null},{"date":"2026-08-31","sell":2606000,"buyback":null},{"date":"2026-09-04","sell":2616000,"buyback":null},{"date":"2026-09-07","sell":2576000,"buyback":2432000}]};</script>
-<script src="./js/app.js"></script>
-</body>
-</html>
+<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gold Advisor</title><meta name="description" content="Gold Advisor — alat bantu membaca harga emas dan membuat rencana pembelian bertahap."><link rel="stylesheet" href="./css/styles.css"></head><body>
+<header class="topbar"><div class="topbar-inner"><a class="brand" href="#dashboard"><span class="brand-mark">G</span><span>Gold Advisor</span></a><nav class="nav"><a class="nav-link active" data-page="dashboard" href="#dashboard">Ringkasan</a><a class="nav-link" data-page="market" href="#market">Market</a><a class="nav-link" data-page="decision" href="#decision">Keputusan</a><a class="nav-link" data-page="simulator" href="#simulator">Simulator</a><a class="nav-link" data-page="method" href="#method">Cara kerja</a></nav><div class="updated-chip"><span class="live-dot"></span><span id="topUpdated">Memuat</span></div></div></header>
+<main class="site">
+<section class="page" id="page-dashboard"><div class="hero"><div><span class="eyebrow">GALERI24 · 1 GRAM</span><h1>Jadi, hari ini <span>beli atau tunggu?</span></h1><p class="lead">Satu halaman untuk membaca harga, melihat koreksi, lalu menentukan porsi pembelian tanpa harus menebak titik terendah.</p></div><div class="hero-date card"><span>HARGA TERBARU</span><b id="heroDate">—</b><small id="sourceLabel">Sumber: —</small></div></div>
+<div class="grid-2"><article class="card price-card"><div class="card-head"><div><span class="mini-label">HARGA JUAL</span><h2 id="price">—</h2></div><span id="todayMove" class="pill">—</span></div><div class="meta-row"><span>Buyback</span><b id="buybackDash">—</b></div><div class="chart-mini"><svg id="miniChart" viewBox="0 0 860 210"></svg><div id="miniTip" class="tooltip" hidden></div></div><p class="card-note" id="miniNote">—</p></article>
+<article class="card score-card"><div class="card-head"><div><span class="mini-label">BUY SCORE</span><small>Seberapa menarik entry saat ini?</small></div><span id="scoreBadge" class="score-badge">—</span></div><div class="score-line"><div class="score-big"><b id="score">—</b><span>/100</span></div><div><h3 id="decisionHeadline">—</h3><p id="decisionText">—</p></div></div><div class="meter"><i id="scoreMeterFill"></i></div><div class="meter-labels"><span>WAIT</span><span>WATCH</span><span>ACCUMULATE</span><span>STRONG BUY</span></div></article></div>
+<div class="section-head"><div><span class="eyebrow">RAPATKAN KE KEPUTUSAN</span><h2>Kalau punya Rp5 juta, beli berapa?</h2><p>Gold Advisor menerjemahkan score menjadi nominal dan entry ladder.</p></div><a href="#simulator" class="link-button">Buka simulator →</a></div>
+<div class="grid-3"><article class="card action-card"><div class="action-top"><span class="mini-label">SARAN HARI INI</span><b id="actionLabel">—</b></div><div class="big-action"><span id="allocPct">—</span><small>alokasi awal</small></div><p id="allocationReason">—</p><div class="two-stats"><div><small>Rp5 juta</small><b id="allocExample">—</b></div><div><small>Perkiraan emas</small><b id="allocGram">—</b></div></div></article>
+<article class="card"><div class="card-head"><div><span class="mini-label">ENTRY LADDER</span><h3>Tambah kalau lebih murah</h3></div></div><div id="ladderRows"></div></article>
+<article class="card"><span class="mini-label">SEKILAS</span><div class="stat-list"><div><span>Turun dari peak</span><b id="quickDd">—</b></div><div><span>Perubahan 30 hari</span><b id="quick30">—</b></div><div><span>Perubahan 1 tahun</span><b id="quickYoy">—</b></div><div><span>Spread buyback</span><b id="quickSpread">—</b></div></div></article></div>
+<div class="insight-row"><div><span class="insight-dot blue">↘</span><div><b>Koreksi</b><p id="insightCorrection">—</p></div></div><div><span class="insight-dot green">↗</span><div><b>Momentum</b><p id="insightMomentum">—</p></div></div><div><span class="insight-dot yellow">%</span><div><b>Spread</b><p id="insightSpread">—</p></div></div></div></section>
+<section class="page" id="page-market" hidden><div class="page-head"><div><span class="eyebrow">MARKET</span><h1>Harga emas, titik demi titik.</h1><p class="lead">Hover atau tap titik pada grafik untuk melihat tanggal, harga jual, buyback, dan perubahan dari titik sebelumnya.</p></div><div class="tabs" id="periodTabs"><button data-period="30">30H</button><button data-period="90">90H</button><button data-period="365" class="active">1 TAHUN</button></div></div>
+<div class="market-grid"><article class="card chart-card"><div class="card-head"><div><span class="mini-label">PRICE TREND</span><h2 id="chartTitle">Pergerakan 1 tahun</h2></div><div class="legend"><span><i class="line"></i>Harga jual</span><span><i class="peak"></i>Peak</span></div></div><div class="chart-wrap"><svg id="mainChart" viewBox="0 0 1400 560"></svg><div id="mainTooltip" class="tooltip tooltip-big" hidden></div></div><div class="chart-reading" id="chartReading">—</div></article><aside class="stats-col"><div class="stat-card primary"><span>Harga saat ini</span><b id="marketCurrent">—</b><small id="marketDate">—</small></div><div class="stat-card"><span>Peak</span><b id="peak">—</b><small id="peakDate">—</small></div><div class="stat-card"><span>Low</span><b id="trough">—</b><small id="troughDate">—</small></div><div class="stat-card warm"><span>Drawdown</span><b id="marketDd">—</b><small>dari peak</small></div></aside></div>
+<div class="section-head compact"><div><span class="eyebrow">HISTORY</span><h2>Riwayat harga</h2><p>Harga per tanggal yang tersimpan di dataset.</p></div><span class="count-chip" id="historyCount">—</span></div><div class="card table-card"><div class="table-scroll"><table><thead><tr><th>Tanggal</th><th>Harga jual</th><th>Buyback</th><th>Perubahan</th><th>Status</th></tr></thead><tbody id="historyRows"></tbody></table></div></div></section>
+<section class="page" id="page-decision" hidden><div class="page-head"><div><span class="eyebrow">KEPUTUSAN</span><h1>Beli berapa, lalu kapan tambah?</h1><p class="lead">Score diterjemahkan menjadi rencana pembelian bertahap dan dijelaskan faktor pembentuknya.</p></div><span id="decisionChip" class="decision-chip">—</span></div><div class="card decision-hero"><div><span class="mini-label">SINYAL HARI INI</span><h2 id="bigSignal">—</h2><p id="bigSignalText">—</p></div><div class="decision-score"><span>BUY SCORE</span><b id="dScore">—</b><small>Confidence <strong id="dConfidence">—</strong></small></div></div><div class="section-head compact"><div><span class="eyebrow">FAKTOR</span><h2>Kenapa score-nya begitu?</h2></div></div><div class="factor-grid" id="factorGrid"></div><div class="grid-2"><article class="card"><span class="mini-label">BREAK-EVEN</span><h2>Berapa kenaikan agar impas?</h2><div class="be-grid"><div><span>Harga beli</span><b id="dBuy">—</b></div><div><span>Buyback</span><b id="dBb">—</b></div><div><span>Spread</span><b id="dSpread">—</b></div><div><span>Harga impas</span><b id="dBe">—</b></div></div><p id="beText">—</p></article><article class="card"><span class="mini-label">SKENARIO</span><h2>Kalau harga turun setelah beli</h2><div class="scenario-grid" id="scenarioBoxes"></div></article></div></section>
+<section class="page" id="page-simulator" hidden><div class="page-head"><div><span class="eyebrow">SIMULATOR</span><h1>Masukkan budget, langsung terlihat rencananya.</h1><p class="lead">Geser porsi pembelian sekarang dan lihat nominal, gram, serta dana yang tetap menunggu.</p></div></div><div class="grid-2"><article class="card"><span class="mini-label">BUDGET INVESTASI</span><div class="money-input"><span>Rp</span><input id="budget" type="number" value="5000000" min="0" step="100000"></div><div class="range-head"><span>Alokasi sekarang</span><b id="allocValue">25%</b></div><input id="allocInput" type="range" min="0" max="70" step="5" value="25"><div class="range-labels"><span>0%</span><span>25%</span><span>50%</span><span>70%</span></div><button id="calcBtn" class="button-primary">Hitung rencana</button><p class="small-note">Engine saat ini menyarankan <b id="engineAlloc">—</b>.</p></article><article class="card sim-output"><span class="mini-label">HASIL</span><h2 id="simHeadline">—</h2><p id="simText">—</p><div class="sim-stats"><div><span>Beli sekarang</span><b id="simNow">—</b></div><div><span>Perkiraan gram</span><b id="simGram">—</b></div><div><span>Dana ditahan</span><b id="simRemain">—</b></div></div></article></div><div class="card"><div class="section-head compact"><div><span class="eyebrow">RENCANA BERTAHAP</span><h2>Contoh pembagian dana</h2></div></div><div id="planRows"></div></div></section>
+<section class="page" id="page-method" hidden><div class="page-head"><div><span class="eyebrow">CARA KERJA</span><h1>Logika di balik keputusan.</h1><p class="lead">Tidak ada angka ajaib. Setiap sinyal punya alasan dan confidence.</p></div></div><div class="method-grid"><article class="method-card"><span>01</span><h2>Koreksi</h2><p>Jarak harga sekarang dari peak membantu melihat seberapa besar ruang koreksi.</p></article><article class="method-card"><span>02</span><h2>Momentum</h2><p>Perubahan terhadap titik historis terdekat dipakai untuk membaca arah terbaru.</p></article><article class="method-card"><span>03</span><h2>Tren</h2><p>Perubahan jangka panjang memberi konteks apakah koreksi terjadi di tengah tren yang masih naik.</p></article><article class="method-card"><span>04</span><h2>Spread</h2><p>Selisih harga jual dan buyback menentukan seberapa jauh harga harus bergerak sebelum impas.</p></article><article class="method-card"><span>05</span><h2>Alokasi</h2><p>Score diterjemahkan menjadi persentase pembelian awal agar keputusan tidak all-in.</p></article><article class="method-card"><span>06</span><h2>Confidence</h2><p>Semakin sedikit data yang tersedia, semakin rendah keyakinan engine.</p></article></div><div class="grid-2"><div class="card"><span class="mini-label">DATASET</span><h2 id="methodSource">—</h2><p id="methodDataNote">—</p></div><div class="card"><span class="mini-label">CONFIDENCE</span><h2 id="methodConfidence">—</h2><p>Confidence adalah kualitas data untuk membantu membaca sinyal, bukan probabilitas harga naik.</p></div></div></section>
+</main><footer class="footer">Gold Advisor · Alat bantu informasi, bukan jaminan hasil investasi. Selalu cek harga final dan ketentuan transaksi di Tring/Pegadaian.</footer><script src="./js/app.js"></script></body></html>

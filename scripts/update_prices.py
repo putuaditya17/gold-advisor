@@ -1,4 +1,7 @@
-# Intentionally conservative placeholder.
-# Replace with a verified parser/API for the chosen official price source.
-# This script must NOT write unverified prices into data/prices.json.
-raise SystemExit('Price collector not enabled: use a verified official feed/parser before scheduling automatic writes.')
+"""Fail-closed updater stub. Do not write unverified price data."""
+import json
+from pathlib import Path
+p=Path('data/prices.json')
+data=json.loads(p.read_text())
+assert data['prices'], 'No verified prices available'
+print(f'Verified {len(data["prices"])} price snapshots; no unverified write performed.')

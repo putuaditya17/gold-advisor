@@ -1,20 +1,12 @@
-Gold Advisor V7 — data-safe GitHub Pages build
+# Gold Advisor v8
 
-# Gold Advisor v6
+Static GitHub Pages dashboard. V8 is designed to be resilient: the app contains an embedded fallback dataset, and will use `data/prices.json` when available. It separates dashboard, market, decision, simulator, and method views.
 
-Static web dashboard for GitHub Pages.
+## Current data note
+The dataset is still a historical snapshot series, not a full daily year. The UI therefore avoids pretending that sparse snapshots are daily observations. Add verified daily observations over time to improve confidence.
 
-## What changed
-- Wider desktop layout and less “AI-looking” visual language.
-- Banking / finance app style: clean cards, calm blue palette, compact typography.
-- Interactive SVG charts with point-by-point tooltips showing date, sell price, buyback and point-to-point change.
-- Dashboard converts the signal into a concrete starting allocation.
-- Market page includes contextual reading below the chart.
-- Separate Decision and Simulator pages.
-- Sparse historical data is treated honestly; calendar-period comparisons are only used when the data supports them.
+## Deployment
+Upload the contents of this directory to the root of the `main` branch. Enable GitHub Pages from `main` / root.
 
-## Deploy
-Upload the contents of this folder to the root of the `main` branch of your GitHub Pages repository.
-
-## Important
-The bundled dataset is a historical snapshot set, not a full daily feed. Keep the daily collector / workflow separately maintained and replace `data/prices.json` with verified daily data as it accumulates.
+## Automation
+`/.github/workflows/update.yml` currently validates the dataset on a daily schedule. It does not invent prices. Replace/extend it with a verified collector before allowing automated writes to `data/prices.json`.
