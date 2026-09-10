@@ -20,3 +20,6 @@ Publikasikan branch `main`, folder `/ (root)`.
 
 ## GitHub Actions
 Setelah upload, buka **Actions → Daily Galeri24 price refresh → Run workflow** untuk uji pertama.
+
+
+V12 UI update: desktop layout now uses a wider 1760px canvas with responsive gutters and wider chart/content columns, reducing unused side space on large browsers.
