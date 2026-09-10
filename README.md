@@ -1,12 +1,15 @@
-# Gold Advisor v8
+# Gold Advisor v10
 
-Static GitHub Pages dashboard. V8 is designed to be resilient: the app contains an embedded fallback dataset, and will use `data/prices.json` when available. It separates dashboard, market, decision, simulator, and method views.
+Dashboard static untuk membaca harga Galeri24 1 gram, koreksi, spread, BUY SCORE, rencana pembelian bertahap, simulator, dan replay sederhana terhadap histori.
 
-## Current data note
-The dataset is still a historical snapshot series, not a full daily year. The UI therefore avoids pretending that sparse snapshots are daily observations. Add verified daily observations over time to improve confidence.
+## Prinsip
+- Tidak mengarang titik harga yang tidak tersedia.
+- Jika `data/prices.json` gagal dimuat di browser, `js/app.js` memakai embedded fallback agar UI tetap berfungsi.
+- Perubahan 7/30/90/365 hari dihitung berdasarkan tanggal aktual dan hanya jika ada titik pada/ sebelum target.
+- Replay 30/90 hari adalah eksploratif dan bukan bukti prediktif.
 
-## Deployment
-Upload the contents of this directory to the root of the `main` branch. Enable GitHub Pages from `main` / root.
+## GitHub Pages
+Upload isi folder ini ke root repository, lalu Pages = `main` + `/ (root)`.
 
-## Automation
-`/.github/workflows/update.yml` currently validates the dataset on a daily schedule. It does not invent prices. Replace/extend it with a verified collector before allowing automated writes to `data/prices.json`.
+## GitHub Actions
+Workflow hanya memvalidasi dataset. Ia sengaja tidak mengambil data dari sumber eksternal secara otomatis sampai parser sumber live disepakati dan tervalidasi.
