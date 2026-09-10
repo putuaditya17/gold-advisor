@@ -1,3 +1,5 @@
+Gold Advisor V7 — data-safe GitHub Pages build
+
 # Gold Advisor v6
 
 Static web dashboard for GitHub Pages.
