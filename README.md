@@ -1,15 +1,22 @@
-# Gold Advisor v10
+# Gold Advisor v11
 
-Dashboard static untuk membaca harga Galeri24 1 gram, koreksi, spread, BUY SCORE, rencana pembelian bertahap, simulator, dan replay sederhana terhadap histori.
+Gold Advisor adalah dashboard pribadi untuk membaca timing akumulasi Galeri24 1 gram. V11 memisahkan data, collector, dan engine keputusan agar lebih mudah diaudit dan dikembangkan.
 
-## Prinsip
-- Tidak mengarang titik harga yang tidak tersedia.
-- Jika `data/prices.json` gagal dimuat di browser, `js/app.js` memakai embedded fallback agar UI tetap berfungsi.
-- Perubahan 7/30/90/365 hari dihitung berdasarkan tanggal aktual dan hanya jika ada titik pada/ sebelum target.
-- Replay 30/90 hari adalah eksploratif dan bukan bukti prediktif.
+## Arsitektur
+- **Frontend:** HTML + CSS + vanilla JS; cocok untuk GitHub Pages.
+- **Dataset:** `data/prices.json` dengan schema v2.
+- **Collector:** `scripts/update_prices.py` mengambil satu snapshot per hari dari halaman publik Galeri24 1 gram.
+- **Scheduler:** `.github/workflows/update.yml` berjalan harian dan dapat dijalankan manual.
+- **Fallback:** `js/app.js` membawa salinan dataset internal terakhir agar UI tetap tampil jika fetch JSON gagal.
+
+## Etika collector
+Collector menggunakan satu request terjadwal per hari, tidak login, tidak mengakses data pribadi, tidak mencoba melewati proteksi, dan berhenti jika struktur data tidak terbaca dengan yakin. Sumber yang dirujuk: https://galeri24.co.id/harga-emas/
+
+## Interpretasi
+BUY SCORE adalah decision aid berbasis rule + histori, bukan prediksi harga. Confidence mengukur kualitas/kepadatan data, bukan peluang profit. Replay hanya eksploratif.
 
 ## GitHub Pages
-Upload isi folder ini ke root repository, lalu Pages = `main` + `/ (root)`.
+Publikasikan branch `main`, folder `/ (root)`.
 
 ## GitHub Actions
-Workflow hanya memvalidasi dataset. Ia sengaja tidak mengambil data dari sumber eksternal secara otomatis sampai parser sumber live disepakati dan tervalidasi.
+Setelah upload, buka **Actions → Daily Galeri24 price refresh → Run workflow** untuk uji pertama.
