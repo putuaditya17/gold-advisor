@@ -31,3 +31,7 @@ V12 UI update: desktop layout now uses a wider 1760px canvas with responsive gut
 - Chart uses actual calendar spacing between observations.
 - Dashboard emphasizes a plain-language action and a concrete starting allocation.
 - Sparse history is disclosed instead of being filled with invented points.
+
+
+## V15: regime/rebound reading
+Menambahkan klasifikasi regime sederhana untuk membedakan rebound harian dari pembalikan tren 30/90 hari. Ini indikator interpretasi, bukan prediksi.
