@@ -23,3 +23,11 @@ Setelah upload, buka **Actions → Daily Galeri24 price refresh → Run workflow
 
 
 V12 UI update: desktop layout now uses a wider 1760px canvas with responsive gutters and wider chart/content columns, reducing unused side space on large browsers.
+
+## V14 UI
+- Wide desktop layout without artificial max-width.
+- Consumer-finance style navigation and decision hierarchy.
+- Interactive price points with date, sell price, buyback and point-to-point change.
+- Chart uses actual calendar spacing between observations.
+- Dashboard emphasizes a plain-language action and a concrete starting allocation.
+- Sparse history is disclosed instead of being filled with invented points.
